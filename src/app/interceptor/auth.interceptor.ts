@@ -35,10 +35,10 @@ export class AuthInterceptor implements HttpInterceptor {
           
         
           this.alertShown = true;  
-          alert('Session expired. Please log in again.');
+          // alert('Session expired. Please log in again.');
           
          
-          this.router.navigate(['/']);  
+          // this.router.navigate(['/']);  
           // this.alertShown = false;
         }
 
