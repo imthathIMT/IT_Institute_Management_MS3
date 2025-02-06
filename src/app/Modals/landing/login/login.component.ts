@@ -34,55 +34,87 @@ export class LoginComponent implements OnInit {
     this.spinner.hide(name);
   }
 
-  // This method will handle form submission
   onSubmit(): void {
+    // Check if both NIC and password are provided
     if (this.login.nic && this.login.password) {
-
+      // Show loading spinner
       this.showSpinner('sp2');
+  
       // Call the login service method
       this.loginService.login(this.login).subscribe(
         (response: string) => {
+          // Hide loading spinner on success
           this.hideSpinner('sp2');
-          // Store the token in localStorage
-          localStorage.setItem('Token', response);
-          // this.authInterceptor.alertShown = false;
-
-          // Decode the JWT token to get user details (including the Role)
-          const userDetails: userDetails = jwtDecode(response);
-
-          localStorage.setItem('Role',userDetails.Role );
-          localStorage.setItem('NIC',userDetails.nic );
-          // Check the Role value directly and navigate accordingly
-          if (userDetails.Role === 'Admin') {
-            // Navigate to Admin Dashboard
-            this.router.navigate(['/admin']);
-          } else if (userDetails.Role === 'Student') {
-            // Navigate to Student Dashboard
-            this.router.navigate(['/student']);
-          } else if (userDetails.Role === 'MasterAdmin') {
-            // Navigate to MasterAdmin Dashboard
-            this.router.navigate(['/admin']);
+  
+          // Check if response is valid
+          if (response) {
+            try {
+              // Store the token in localStorage
+              localStorage.setItem('Token', response);
+  
+              // Decode the JWT token to get user details (including the Role)
+              const userDetails: userDetails = jwtDecode(response);
+  
+              // Store user details in localStorage
+              localStorage.setItem('Role', userDetails.Role);
+              localStorage.setItem('NIC', userDetails.nic);
+  
+              // Navigate based on user role
+              switch (userDetails.Role) {
+                case 'Admin':
+                  this.router.navigate(['/admin']);
+                  break;
+                case 'Student':
+                  this.router.navigate(['/student']);
+                  break;
+                case 'MasterAdmin':
+                  this.router.navigate(['/admin']);
+                  break;
+                default:
+                  // Handle unexpected role
+                  console.error('Unrecognized role:', userDetails.Role);
+                  alert('Role is unrecognized or missing.');
+                  break;
+              }
+            } catch (err) {
+              // Token decoding or storage error
+              console.error('Error decoding the token:', err);
+              this.message = 'There was an error decoding the token. Please try again later.';
+              setTimeout(() => { this.message = ''; }, 4000);
+            }
           } else {
-            // Handle unexpected role
-            console.error('Unrecognized role');
-            alert('Role is unrecognized or missing.');
+            // Handle empty response
+            console.error('Empty response received');
+            this.message = 'Login failed, please try again.';
+            setTimeout(() => { this.message = ''; }, 4000);
           }
         },
         (error) => {
+          // Handle login service error (API errors)
           console.error('Login failed:', error);
+  
           this.hideSpinner('sp2');
-          // alert(error.error);
-          this.message = error.error
-
+  
+          // Check if the error has a message from the server
+          if (error.error && error.error.message) {
+            this.message = error.error.message; // Use server's error message
+          } else if (error.status === 0) {
+            this.message = 'Network error: Unable to reach the server. Please try again later.';
+          } else {
+            this.message = `Login failed: ${error.statusText || 'Unknown error'}`;
+          }
+  
           setTimeout(() => {
             this.message = '';
           }, 4000);
         }
       );
     } else {
+      // Handle missing NIC or password
       console.log('Form is invalid');
       alert('Please enter both NIC and password.');
     }
   }
+  
 }
 
